@@ -10,30 +10,14 @@ import argparse
 import time
 from tqdm import tqdm
 import concurrent.futures
+import multiprocessing as mp
+import pickle
 
 # User-defined modules
 from classifiers.k_nearest_neighbors import kNearestNeighbors
 from data_utils import ACC
-def positive_int(s: str) -> int:
-    try:
-        v = int(s)
-    except ValueError:
-        raise argparse.ArgumentTypeError(f'Expected integer, got {s!r}')
+from argparse_utils import positive_int, float_zero_to_one
 
-    if v <= 0:
-        raise argparse.ArgumentTypeError(f'Expected positive integer, got {v}')
-
-    return v
-def float_zero_to_one(s: str) -> float:
-    try:
-        v = float(s)
-    except ValueError:
-        raise argparse.ArgumentTypeError(f'Expected float, got {s!r}')
-
-    if v > 1.0 or v < 0:
-        raise argparse.ArgumentTypeError(f'Expected float int the range [0, 1], got {v}')
-
-    return v
 # Dummy fitness function - not used for computing fitness values, but required by GA instance constructor
 def fitness_func_dummy(ga_instance, solution, solution_idx):
     global classifier, X_test, y_test
@@ -117,6 +101,8 @@ class MultiprocessGA(pygad.GA):
         return pop_fitness
 
 if __name__ == '__main__':
+    mp.set_start_method('spawn')
+
     # Create an argument parser to set the dataset, subset proportion and number of iteration
     parser = argparse.ArgumentParser(
         'Script for improving the accuracy of kNN classifier on a subset of the FashionMNIST training set via genetic algorithms')
@@ -190,7 +176,7 @@ if __name__ == '__main__':
     subset_size = (int)(subset_prop * len(train_set))
 
     # Genetic algorithm parameters
-    num_generations = 500
+    num_generations = 200
     num_parents_mating = 20
 
     sol_per_pop = 100
@@ -235,7 +221,7 @@ if __name__ == '__main__':
     start_time = 0
     evo_time_elapsed = np.zeros(num_generations+1)
 
-    executor = concurrent.futures.ProcessPoolExecutor(max_workers=12, initializer=child_process_init, initargs=(classifier, X_test, y_test))
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=10, initializer=child_process_init, initargs=(classifier, X_test, y_test))
     ga_instance.run()
 
     solution, solution_fitness, solution_idx = ga_instance.best_solution()
@@ -250,5 +236,11 @@ if __name__ == '__main__':
         os.makedirs(output_folder_path)
 
     identifier = dataset_name + '_subset_prop=' + str(subset_prop) + '_iter=' + str(iter)
-    ga_instance.save(filename=output_folder_path + 'GA_' + identifier)
-    np.save(output_folder_path + 'Evo_time_' + identifier, evo_time_elapsed)
+
+    best_solutions = ga_instance.best_solutions
+    best_solutions_fitness = ga_instance.best_solutions_fitness
+
+    with open(output_folder_path + 'GA_results_' + identifier + '.pkl', 'wb') as handle:
+        pickle.dump((best_solutions, best_solutions_fitness, evo_time_elapsed), handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    print('Result saved. All done!')
