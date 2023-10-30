@@ -152,11 +152,14 @@ if __name__ == '__main__':
     del executor
 
     print('Saving GA execution results to file...')
-    results_dir_path = '../results/'
-    identifier = dataset_name + '_subset_prop=' + f'{subset_prop:.4f}' + '_trial=' + str(trial)
-
     best_solutions = ga_instance.best_solutions
     best_solutions_fitness = ga_instance.best_solutions_fitness
+
+    results_dir_path = '../results/'
+    if not os.path.exists(results_dir_path + dataset_name + '/'):
+        os.makedirs(results_dir_path + dataset_name + '/')
+
+    identifier = dataset_name + '_subset_prop=' + f'{subset_prop:.4f}' + '_trial=' + str(trial)
 
     with open(results_dir_path + dataset_name + '/' + 'GA_results_' + identifier + '.pkl', 'wb') as handle:
         pickle.dump((best_solutions, best_solutions_fitness, ga_instance.evo_time_elapsed), handle, protocol=pickle.HIGHEST_PROTOCOL)
