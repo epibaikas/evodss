@@ -10,6 +10,7 @@ def positive_int(s: str) -> int:
         raise argparse.ArgumentTypeError(f'Expected positive integer, got {v}')
 
     return v
+
 def float_zero_to_one(s: str) -> float:
     try:
         v = float(s)
