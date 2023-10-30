@@ -97,7 +97,7 @@ if __name__ == '__main__':
     subset_size = (int)(subset_prop * len(train_set))
 
     # Genetic algorithm parameters
-    num_generations = 5
+    num_generations = 400
     num_parents_mating = 20
 
     sol_per_pop = 100

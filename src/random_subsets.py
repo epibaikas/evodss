@@ -125,8 +125,8 @@ if __name__ == '__main__':
     else:
         if not os.path.exists(artifacts_dir_path):
             os.makedirs(artifacts_dir_path)
-        random_subsets = [get_random_balanced_subset_indices(train_set, subset_size) for i in tqdm(range(num_of_rep))]
         print('Generating and saving random subsets list to file...')
+        random_subsets = [get_random_balanced_subset_indices(train_set, subset_size) for i in tqdm(range(num_of_rep))]
         with open(path_1, 'wb') as fp:
             pickle.dump(random_subsets, fp)
 
