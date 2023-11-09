@@ -1,8 +1,6 @@
 # Python packages
 import numpy as np
 import torch
-from torchvision import datasets
-from torchvision.transforms import ToTensor
 import os
 import argparse
 import concurrent.futures
@@ -11,9 +9,9 @@ import pickle
 
 # User-defined modules
 from classifiers.k_nearest_neighbors import kNearestNeighbors
-from data_utils import ACC
+from data_utils import load_dataset
 from argparse_utils import positive_int, float_zero_to_one
-from ga_utils import (MultiprocessGA, fitness_func_dummy, crossover_func, mutation_func, on_start, child_process_init)
+from ga_utils import (MultiprocessGA, fitness_func_dummy, crossover_func, mutation_func, on_start, on_generation, child_process_init)
 
 if __name__ == '__main__':
     # Set the process creation method to 'spawn' instead of 'fork' ('fork' is the default method in linux systems)
@@ -49,30 +47,8 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
-    # Get the dataset
-    if dataset_name == 'FashionMNIST':
-        train_set = datasets.FashionMNIST(root='../datasets/', download=True, transform=ToTensor(), train=True)
-        test_set = datasets.FashionMNIST(root='../datasets/', download=True, transform=ToTensor(), train=False)
-    elif dataset_name == 'MNIST':
-        train_set = datasets.MNIST(root='../datasets/', download=True, transform=ToTensor(), train=True)
-        test_set = datasets.MNIST(root='../datasets/', download=True, transform=ToTensor(), train=False)
-    else:
-        raise argparse.ArgumentTypeError('Unknown dataset name')
-
-    X_train = train_set.data.type(torch.float32)
-    y_train = train_set.targets.type(torch.int8).to(device)
-
-    X_test = test_set.data.type(torch.float32)
-    y_test = test_set.targets.type(torch.int8).to(device)
-
-    print('Dataset:', dataset_name)
-    print('X_train shape:', X_train.shape, X_train.dtype)
-    print('y_train shape:', y_train.shape, y_train.dtype)
-    print('X_test shape:', X_test.shape, X_test.dtype)
-    print('y_test shape:', y_test.shape, y_test.dtype, '\n')
-
-    X_train = torch.reshape(X_train, (X_train.shape[0], -1)).to(device)
-    X_test = torch.reshape(X_test, (X_test.shape[0], -1)).to(device)
+    # Load the dataset
+    train_set, test_set, X_train, y_train, X_test, y_test = load_dataset(dataset_name, device)
 
     # Initialise classifier
     classifier = kNearestNeighbors(X_train, y_train, device)
@@ -136,6 +112,7 @@ if __name__ == '__main__':
                            save_solutions=False,
                            save_best_solutions=True,
                            on_start=on_start,
+                           on_generation=on_generation,
                            exectutor=executor,
                            start_time=start_time,
                            evo_time_elapsed=evo_time_elapsed)

@@ -14,8 +14,8 @@ def fitness_func_dummy(ga_instance, solution, solution_idx):
 
 # Actual fitness function used by cal_pop_fitness to compute fitness values
 def fitness_func(solution):
-    global classifier, X_test, y_test
-    fitness = ACC(classifier, X_test, y_test, solution)
+    global classifier, X_test, y_test, test_example_indices
+    fitness = ACC(classifier, X_test, y_test, solution, test_subset_idxs=test_example_indices)
     return fitness
 def crossover_func(parents, offspring_size, ga_instance):
     offspring = np.zeros(offspring_size, dtype=int)
@@ -65,33 +65,75 @@ def mutation_func(offspring, ga_instance):
     gen = ga_instance.generations_completed + 1
     time_elapsed = time.time() - ga_instance.start_time
     ga_instance.evo_time_elapsed[gen] = time_elapsed + ga_instance.evo_time_elapsed[gen-1]
-    print("Gen = {generation}, Best top-1 acc/fitness = {fitness}, Time elapsed from start = {time:3.2} s".format(generation=gen,
-    fitness=ga_instance.best_solution(pop_fitness=ga_instance.last_generation_fitness)[1], time=ga_instance.evo_time_elapsed[gen]))
+
+    return offspring
+
+def mutation_func_modified(offspring, ga_instance):
+    # Calculate the number of genes to be mutated based on the specified mutation percent
+    num_of_genes_to_mutate = (int)((ga_instance.mutation_percent_genes/100) * offspring.shape[1])
+
+    for k in range(offspring.shape[0]):
+        # Create a set out of the genes included in the non-mutated offspring
+        original_offspring = set(offspring[k])
+
+        # Find the genes which are not included into the non-mutated offspring
+        lists_of_class_idxs_not_in_offspring = []
+        for set_of_class_idxs in ga_instance.sets_of_idxs_per_class:
+            class_set = set_of_class_idxs - set_of_class_idxs.intersection(original_offspring)
+            lists_of_class_idxs_not_in_offspring.append(list(class_set))
+
+        # Generate an array of random positions in the offspring which will be mutated
+        random_idx = np.random.randint(low=0, high=offspring.shape[1], size=num_of_genes_to_mutate)
+
+        # print(original_offspring)
+        # print(lists_of_class_idxs_not_in_offspring)
+
+        for i in random_idx:
+            random_class = np.random.choice(np.arange(len(lists_of_class_idxs_not_in_offspring)))
+            # print(random_class)
+            # Check that the list is not empty
+            if len(lists_of_class_idxs_not_in_offspring[random_class]) > 0:
+                offspring[k, i] = lists_of_class_idxs_not_in_offspring[random_class].pop()
+
+    # Take a time reading at the end of the evolution process for every generation / start of new generation
+    gen = ga_instance.generations_completed + 1
+    time_elapsed = time.time() - ga_instance.start_time
+    ga_instance.evo_time_elapsed[gen] = time_elapsed + ga_instance.evo_time_elapsed[gen-1]
 
     return offspring
 
 def on_start(ga_instance):
     print('Genetic Algorithm start', flush=True)
 
-# Initializer function used to pass classifier, X_test and y_test to child processes
-def child_process_init(classifier_instance, test_data, test_labels):
+def on_generation(ga_instance):
+    gen = ga_instance.generations_completed
+    print("Gen = {generation}, Best solution fitness = {fitness:.5f}, Time elapsed from start = {time:3.2} s".format(generation=gen,
+    fitness=ga_instance.best_solution(pop_fitness=ga_instance.last_generation_fitness)[1], time=ga_instance.evo_time_elapsed[gen]))
+
+# Initializer function used to pass classifier, X_test, y_test and the indices of the test examples to be used
+# to child processes
+def child_process_init(classifier_instance, test_data, test_labels, test_subset_indices=None):
     global classifier
     global X_test
     global y_test
+    global test_example_indices
+
     classifier = classifier_instance
     X_test = test_data
     y_test = test_labels
+    test_example_indices = test_subset_indices
 
 # Modification of the GA class to use multiprocessing. The built-in multiprocessing could not be used because there was
 # no way to pass the classifier, X_test and y_test variables required by the fitness_func to the child processes.
 class MultiprocessGA(pygad.GA):
     # Extend the original GA class
-    def __init__(self, *args, exectutor, start_time, evo_time_elapsed, **kwargs):
+    def __init__(self, *args, exectutor, start_time, evo_time_elapsed, sets_of_idxs_per_class=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.executor = exectutor
         self.start_time = start_time
         self.evo_time_elapsed = evo_time_elapsed
+        self.sets_of_idxs_per_class = sets_of_idxs_per_class
 
     def cal_pop_fitness(self):
         pop_fitness = ['undefined'] * len(self.population)

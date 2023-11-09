@@ -21,3 +21,14 @@ def float_zero_to_one(s: str) -> float:
         raise argparse.ArgumentTypeError(f'Expected float int the range [0, 1], got {v}')
 
     return v
+
+def positive_float(s: str) -> float:
+    try:
+        v = float(s)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f'Expected float, got {s!r}')
+
+    if  v < 0:
+        raise argparse.ArgumentTypeError(f'Expected positive float, got {v}')
+
+    return v
