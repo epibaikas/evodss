@@ -10,7 +10,7 @@ import multiprocessing as mp
 from classifiers.k_nearest_neighbors import kNearestNeighbors
 from data_utils import load_dataset, ACC
 from argparse_utils import positive_int, positive_float
-from ga_utils import (MultiprocessGA, fitness_func_dummy, crossover_func, mutation_func, mutation_func_modified, on_start, on_generation, child_process_init)
+from ga_utils import (MultiprocessGA, fitness_func_dummy, crossover_func, mutation_func, on_start, on_generation, child_process_init)
 
 if __name__ == '__main__':
     # Set the process creation method to 'spawn' instead of 'fork' ('fork' is the default method in linux systems)
@@ -150,7 +150,7 @@ if __name__ == '__main__':
         # Flatten the list of lists to a single list
         train_subset_idxs = [idx for sub_list in list_of_class_idx_lists for idx in sub_list]
 
-        acc = ACC(classifier, X_test[test_example_idxs], y_test[test_example_idxs] , subset_idxs=train_subset_idxs, test_subset_idxs=test_example_idxs)
+        acc = ACC(classifier, X_test, y_test, subset_idxs=train_subset_idxs, test_subset_idxs=test_example_idxs)
         acc_array[0, t-1] = acc
         print('t =', t, ', top-1 acc = {acc:0.5f}'.format(acc=acc))
 
@@ -185,7 +185,7 @@ if __name__ == '__main__':
 
         if (K > len(V_t)):
             # All examples can fit in memory so no need to use subset selection
-            acc_array[1, t-1] = ACC(classifier, X_test[test_example_idxs], y_test[test_example_idxs] , subset_idxs=V_t, test_subset_idxs=test_example_idxs)
+            acc_array[1, t-1] = ACC(classifier, X_test, y_test, subset_idxs=V_t, test_subset_idxs=test_example_idxs)
             print('t = {t}, no need for subset selection, top-1 acc = {acc:0.5f} \n'.format(t=t, acc= acc_array[1, t-1]))
             # Move all elements of V_t to M
             M = V_t
@@ -198,7 +198,7 @@ if __name__ == '__main__':
                 sets_of_idxs_per_class.append(set(class_Q_i_idxs))
 
             # Genetic algorithm parameters
-            num_generations = 10
+            num_generations = 40
             num_parents_mating = 20
 
             sol_per_pop = 100
@@ -213,7 +213,7 @@ if __name__ == '__main__':
 
             # Create a ProcessPoolExecutor instance responsible for multiprocessing
             executor = concurrent.futures.ProcessPoolExecutor(max_workers=4, initializer=child_process_init,
-                                                              initargs=(classifier, X_test[test_example_idxs], y_test[test_example_idxs], test_example_idxs))
+                                                              initargs=(classifier, X_test, y_test, test_example_idxs))
             start_time = 0
             evo_time_elapsed = np.zeros(num_generations + 1)
 
@@ -233,7 +233,7 @@ if __name__ == '__main__':
                                 parent_selection_type=parent_selection_type,
                                 keep_elitism=keep_elitism,
                                 crossover_type=crossover_func,
-                                mutation_type=mutation_func_modified,
+                                mutation_type=mutation_func,
                                 mutation_percent_genes=mutation_percent_genes,
                                 allow_duplicate_genes=False,
                                 random_seed=random_seed,
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     if not os.path.exists(results_dir_path + dataset_name + '/'):
         os.makedirs(results_dir_path + dataset_name + '/')
 
-    identifier = dataset_name + '_memory_size=' + f'{memory_size:.2f}' + '_' + seq_type + '_acc_seq' + '_trial=' + str(trial)
+    identifier = dataset_name + '_memory_size=' + f'{memory_size:.3f}' + '_' + seq_type + '_acc_seq' + '_trial=' + str(trial)
     np.save(results_dir_path + dataset_name + '/' + 'Incremental_learning_acc_array_' + identifier + '.npy', acc_array)
 
     print('Results saved. All done!')

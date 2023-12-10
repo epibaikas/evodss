@@ -9,7 +9,7 @@ import pickle
 
 # User-defined modules
 from classifiers.k_nearest_neighbors import kNearestNeighbors
-from data_utils import load_dataset
+from data_utils import load_dataset, get_class_example_indices
 from argparse_utils import positive_int, float_zero_to_one
 from ga_utils import (MultiprocessGA, fitness_func_dummy, crossover_func, mutation_func, on_start, on_generation, child_process_init)
 
@@ -93,6 +93,15 @@ if __name__ == '__main__':
     start_time = 0
     evo_time_elapsed = np.zeros(num_generations+1)
 
+    sets_of_idxs_per_class = []
+    for i in range(len(train_set.classes)):
+        class_idxs = get_class_example_indices(train_set, i)
+        sets_of_idxs_per_class.append(set(class_idxs))
+
+    init_pop = np.zeros((sol_per_pop, subset_size))
+    for i in range(sol_per_pop):
+        init_pop[i] = np.random.choice(gene_space, subset_size, replace=False)
+
     ga_instance = MultiprocessGA(num_generations=num_generations,
                            num_parents_mating=num_parents_mating,
                            fitness_func=fitness_func_dummy,
@@ -101,6 +110,7 @@ if __name__ == '__main__':
                            gene_type=int,
                            init_range_low=init_range_low,
                            init_range_high=init_range_high,
+                           initial_population=init_pop,
                            gene_space=gene_space,
                            parent_selection_type=parent_selection_type,
                            keep_elitism=keep_elitism,
@@ -115,7 +125,8 @@ if __name__ == '__main__':
                            on_generation=on_generation,
                            exectutor=executor,
                            start_time=start_time,
-                           evo_time_elapsed=evo_time_elapsed)
+                           evo_time_elapsed=evo_time_elapsed,
+                           sets_of_idxs_per_class=sets_of_idxs_per_class)
 
     ga_instance.summary()
 

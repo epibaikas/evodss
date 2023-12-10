@@ -33,7 +33,7 @@ def crossover_func(parents, offspring_size, ga_instance):
         # Check the elements of the sorted parents at the crossover index. To avoid gene duplication, keep the lower
         # part (0:crossover_point) of the parent whose value is lower at the crossover index and the upper part
         # (crossover_point:) of the other parent
-        if (parents[parent1_idx, crossover_point] <= parents[parent1_idx, crossover_point]):
+        if (parents[parent1_idx, crossover_point] <= parents[parent2_idx, crossover_point]):
             offspring[k, 0:crossover_point] = parents[parent1_idx, 0:crossover_point]
             offspring[k, crossover_point:] = parents[parent2_idx, crossover_point:]
         else:
@@ -45,32 +45,6 @@ def crossover_func(parents, offspring_size, ga_instance):
 def mutation_func(offspring, ga_instance):
     # Calculate the number of genes to be mutated based on the specified mutation percent
     num_of_genes_to_mutate = (int)((ga_instance.mutation_percent_genes/100) * offspring.shape[1])
-    gene_space = set(ga_instance.gene_space)
-
-    for k in range(offspring.shape[0]):
-        # Create a set out of the genes included in the non-mutated offspring
-        original_offspring = set(offspring[k])
-
-        # Find the genes which are not included into the non-mutated offspring
-        available_genes = list(gene_space - original_offspring)
-        # Shuffle the list of available genes so that it is not sorted
-        random.shuffle(available_genes)
-        # Generate an array of random positions in the offspring which will be mutated
-        random_idx = np.random.randint(low=0, high=offspring.shape[1], size=num_of_genes_to_mutate)
-
-        for i in random_idx:
-            offspring[k, i] = available_genes.pop()
-
-    # Take a time reading at the end of the evolution process for every generation / start of new generation
-    gen = ga_instance.generations_completed + 1
-    time_elapsed = time.time() - ga_instance.start_time
-    ga_instance.evo_time_elapsed[gen] = time_elapsed + ga_instance.evo_time_elapsed[gen-1]
-
-    return offspring
-
-def mutation_func_modified(offspring, ga_instance):
-    # Calculate the number of genes to be mutated based on the specified mutation percent
-    num_of_genes_to_mutate = (int)((ga_instance.mutation_percent_genes/100) * offspring.shape[1])
 
     for k in range(offspring.shape[0]):
         # Create a set out of the genes included in the non-mutated offspring
@@ -80,18 +54,15 @@ def mutation_func_modified(offspring, ga_instance):
         lists_of_class_idxs_not_in_offspring = []
         for set_of_class_idxs in ga_instance.sets_of_idxs_per_class:
             class_set = set_of_class_idxs - set_of_class_idxs.intersection(original_offspring)
-            lists_of_class_idxs_not_in_offspring.append(list(class_set))
+            class_idxs_list = list(class_set)
+            random.shuffle(class_idxs_list)     # Shuffle the list of indices to ensure it is unsorted
+            lists_of_class_idxs_not_in_offspring.append(class_idxs_list)
 
         # Generate an array of random positions in the offspring which will be mutated
         random_idx = np.random.randint(low=0, high=offspring.shape[1], size=num_of_genes_to_mutate)
 
-        # print(original_offspring)
-        # print(lists_of_class_idxs_not_in_offspring)
-
         for i in random_idx:
             random_class = np.random.choice(np.arange(len(lists_of_class_idxs_not_in_offspring)))
-            # print(random_class)
-            # Check that the list is not empty
             if len(lists_of_class_idxs_not_in_offspring[random_class]) > 0:
                 offspring[k, i] = lists_of_class_idxs_not_in_offspring[random_class].pop()
 
@@ -112,7 +83,7 @@ def on_generation(ga_instance):
 
 # Initializer function used to pass classifier, X_test, y_test and the indices of the test examples to be used
 # to child processes
-def child_process_init(classifier_instance, test_data, test_labels, test_subset_indices=None):
+def child_process_init(classifier_instance, test_data, test_labels, test_subset_indices=[]):
     global classifier
     global X_test
     global y_test

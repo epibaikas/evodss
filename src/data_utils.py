@@ -31,15 +31,18 @@ def load_dataset(dataset_name, device):
 
     return train_set, test_set, X_train, y_train, X_test, y_test
 
-def ACC(classifier, X_test, y_test, subset_idxs, test_subset_idxs=None):
+def ACC(classifier, X_test, y_test, subset_idxs, test_subset_idxs=[]):
     y_pred = classifier.predict(X_test, subset_idxs, train_classifier=False, k=3)
     y_pred_np = y_pred.cpu().numpy()
 
-    if test_subset_idxs is None:
+    if len(test_subset_idxs) == 0:
+        # Consider all the test examples in y_test
         num_correct = np.sum(y_test.cpu().numpy() == y_pred_np)
+        acc = num_correct / y_test.shape[0]
     else:
-        num_correct = np.sum(y_test.cpu().numpy() == y_pred_np[test_subset_idxs])
-    acc = num_correct / y_test.shape[0]
+        # Consider only the test examples specified by test_subset_idxs
+        num_correct = np.sum(y_test[test_subset_idxs].cpu().numpy() == y_pred_np[test_subset_idxs])
+        acc = num_correct / y_test[test_subset_idxs].shape[0]
     return acc
 
 def get_random_balanced_subset_indices(dataset, subset_size):
