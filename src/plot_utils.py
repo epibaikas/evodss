@@ -4,20 +4,45 @@ import pickle
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
-from matplotlib.gridspec import GridSpec
 
+def set_size(width, fraction=1, subplots=(1, 1)):
+    """
+    Set figure dimensions to avoid scaling in LaTeX.
+
+    :param width: float
+            Document textwidth or columnwidth in pts
+    :param fraction: float, optional
+            Fraction of the width which you wish the figure to occupy
+    :param subplots: array-like, optional
+            The number of rows and columns of subplots.
+
+    :return fig_dim: tuple
+            Dimensions of figure in inches
+    """
+    # Width of figure (in pts)
+    fig_width_pt = width * fraction
+
+    # Convert from pt to inches
+    inches_per_pt = 1 / 72.27
+
+    # Golden ratio to set aesthetic figure height
+    # https://disq.us/p/2940ij3
+    golden_ratio = (5**.5 - 1) / 2
+
+    # Figure width in inches
+    fig_width_in = fig_width_pt * inches_per_pt
+    # Figure height in inches
+    fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
+
+    fig_dim = (fig_width_in, fig_height_in)
+
+    return fig_dim
 def best_fitness_vs_gen_plot(dataset_names, subset_prop_list, num_of_trials, results_dir_path, plots_dir_path):
     # Create figure and set size
-    fig = plt.figure(figsize=(9, 4))
-
-    # Set the width ratios for every subplot in the figure, leave 10% for the legend at the end
-    width_ratios = [(1 - 0.1) / len(dataset_names) for i in range(len(dataset_names))]
-    width_ratios.append(0.1)
-    gs = GridSpec(nrows=1, ncols=len(dataset_names)+1, width_ratios=width_ratios)
+    width_in, _ = set_size(width=241.147, subplots=(1, 2))
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(width_in, 2.5))
 
     for plot_idx, dataset_name in enumerate(dataset_names):
-        ax = fig.add_subplot(gs[plot_idx])
-
         with open(results_dir_path + dataset_name + '/' + 'Full_set_acc_' + dataset_name + '.pkl', 'rb') as handle:
             full_set_acc = pickle.load(handle)
 
@@ -43,44 +68,40 @@ def best_fitness_vs_gen_plot(dataset_names, subset_prop_list, num_of_trials, res
             best_fitness_std = np.std(best_fitness, axis=0)
 
             label = str(subset_prop * 100)
-            ax.plot(range(num_of_generations), best_fitness_mean, label=label)
-            ax.fill_between(range(num_of_generations), best_fitness_mean - best_fitness_std, best_fitness_mean + best_fitness_std, alpha=0.2)
+            ax[plot_idx].plot(range(num_of_generations), best_fitness_mean, label=label)
+            ax[plot_idx].fill_between(range(num_of_generations), best_fitness_mean - best_fitness_std, best_fitness_mean + best_fitness_std, alpha=0.2)
 
         # Invert the order of the legend labels
-        handles, labels = ax.get_legend_handles_labels()
+        handles, labels = ax[plot_idx].get_legend_handles_labels()
         handles = handles[::-1]
         labels = labels[::-1]
 
         # Add dashed line that shows the accuracy obtained on the full training set
-        ax.axhline(y=full_set_acc, color='k', linestyle='--', label='Full set accuracy')
-        ax.annotate('Full training set \(ACC\): ' + f"{full_set_acc:.2f}", (1, full_set_acc + 0.01), color='k')
+        ax[plot_idx].axhline(y=full_set_acc, color='k', linestyle='--', label='Full set accuracy')
+        ax[plot_idx].annotate('Full training \nset \(ACC\): ' + f"{full_set_acc:.2f}", (1, full_set_acc + 0.01), color='k', fontsize=8)
 
-        ax.set_xlabel('Generation')
-        ax.set_title(dataset_name)
-        ax.set_ylim(bottom=0.5, top=1.0)
-        ax.grid()
+        ax[plot_idx].set_xlabel('Generation')
+        ax[plot_idx].set_xticks([x for x in range(0, num_of_generations, 200)])
+        ax[plot_idx].set_title(dataset_name, pad=10)
+        ax[plot_idx].set_ylim(bottom=0.5, top=1.0)
+        ax[plot_idx].grid()
 
-    ax_legend = fig.add_subplot(gs[-1])
-    ax_legend.axis('off')
-    ax_legend.legend(title='Subset \n proportion (\%)', handles=handles, labels=labels, bbox_to_anchor=(-0.5, 1), loc='upper left')
+    plt.legend(title='Subset \n prop. (\%)', handles=handles, labels=labels,
+               bbox_to_anchor=(1, 1.04), loc='upper left', fontsize=8)
 
-    ax = fig.axes
     ax[0].set_ylabel('Best \(ACC\) / fitness')
-    fig.suptitle('Generation vs Best fitness')
-    plt.savefig(plots_dir_path + 'gen_vs_best_fitness.png', dpi=300)
+    ax[1].set_yticklabels([])
+    # fig.suptitle('Generation vs Best fitness')
+    fig.subplots_adjust(bottom=0.2, left=0.15, right=0.78)
+
+    plt.savefig(plots_dir_path + 'gen_vs_best_fitness.pdf')
 
 def best_fitness_vs_time_plot(dataset_names, subset_prop_list, num_of_trials, results_dir_path, plots_dir_path):
     # Create figure and set size
-    fig = plt.figure(figsize=(9, 4))
-
-    # Set the width ratios for every subplot in the figure, leave 10% for the legend at the end
-    width_ratios = [(1 - 0.1) / len(dataset_names) for i in range(len(dataset_names))]
-    width_ratios.append(0.1)
-    gs = GridSpec(nrows=1, ncols=len(dataset_names)+1, width_ratios=width_ratios)
+    width_in, _ = set_size(width=241.147, subplots=(1, 2))
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(width_in, 2.5))
 
     for plot_idx, dataset_name in enumerate(dataset_names):
-        ax = fig.add_subplot(gs[plot_idx])
-
         with open(results_dir_path + dataset_name + '/' + 'Full_set_acc_' + dataset_name + '.pkl', 'rb') as handle:
             full_set_acc = pickle.load(handle)
 
@@ -112,34 +133,86 @@ def best_fitness_vs_time_plot(dataset_names, subset_prop_list, num_of_trials, re
             evo_time_mean = np.mean(evo_time, axis=0)
 
             label = str(subset_prop * 100)
-            ax.plot(evo_time_mean, best_fitness_mean, label=label)
-            ax.fill_between(evo_time_mean, best_fitness_mean - best_fitness_std, best_fitness_mean + best_fitness_std, alpha=0.2)
+            ax[plot_idx].plot(evo_time_mean, best_fitness_mean, label=label)
+            ax[plot_idx].fill_between(evo_time_mean, best_fitness_mean - best_fitness_std, best_fitness_mean + best_fitness_std, alpha=0.2)
 
         # Invert the order of the legend labels
-        handles, labels = ax.get_legend_handles_labels()
+        handles, labels = ax[plot_idx].get_legend_handles_labels()
         handles = handles[::-1]
         labels = labels[::-1]
 
         # Add dashed line that shows the accuracy obtained on the full training set
-        ax.axhline(y=full_set_acc, color='k', linestyle='--', label='Full set accuracy')
-        ax.annotate('Full training set \(ACC\): ' + f"{full_set_acc:.2f}", (1, full_set_acc + 0.01), color='k')
+        ax[plot_idx].axhline(y=full_set_acc, color='k', linestyle='--', label='Full set accuracy')
+        ax[plot_idx].annotate('Full training \n set \(ACC\): ' + f"{full_set_acc:.2f}", (1, full_set_acc + 0.01), color='k', fontsize=8)
 
-        ax.set_xlabel('Evolution time (s)')
-        ax.set_title(dataset_name)
-        ax.set_ylim(bottom=0.5, top=1.0)
-        ax.grid()
+        ax[plot_idx].set_xlabel('Evolution time (s)')
+        ax[plot_idx].set_xticks([0, 10000, 20000])
+        ax[plot_idx].set_title(dataset_name, pad=10)
+        ax[plot_idx].set_ylim(bottom=0.5, top=1.0)
+        ax[plot_idx].grid()
 
-    ax_legend = fig.add_subplot(gs[-1])
-    ax_legend.axis('off')
-    ax_legend.legend(title='Subset \n proportion (\%)', handles=handles, labels=labels, bbox_to_anchor=(-0.5, 1), loc='upper left')
+    plt.legend(title='Subset \n prop. (\%)', handles=handles, labels=labels,
+               bbox_to_anchor=(1, 1.04), loc='upper left', fontsize=8)
 
-    ax = fig.axes
     ax[0].set_ylabel('Best \(ACC\) / fitness')
-    fig.suptitle('Evolution time vs Best fitness')
-    plt.savefig(plots_dir_path + 'time_vs_best_fitness.png', dpi=300)
+    ax[1].set_yticklabels([])
+    # fig.suptitle('Evolution time vs Best fitness')
+    fig.subplots_adjust(bottom=0.2, left=0.15, right=0.78)
+
+    plt.savefig(plots_dir_path + 'time_vs_best_fitness.pdf')
+
+def mean_time_per_gen(dataset_names, subset_prop_list, num_of_trials, results_dir_path, plots_dir_path):
+    # Create figure and set size
+    width_in, height_in = set_size(width=241.147, subplots=(1, 1))
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(width_in, 1.5))
+
+    width = 0.4
+    for plot_idx, dataset_name in enumerate(dataset_names):
+        mean_times_per_gen = []
+
+        for subset_prop in subset_prop_list:
+            # Load the first file, to get the number of generations
+            identifier = dataset_name + '_subset_prop=' + f'{subset_prop:.4f}' + '_trial=' + str(1)
+            with open(results_dir_path + dataset_name + '/' + 'GA_results_' + identifier + '.pkl', 'rb') as handle:
+                best_solutions, best_solutions_fitness, evo_time_elapsed = pickle.load(handle)
+
+            num_of_generations = len(best_solutions_fitness)
+
+            evo_time = np.zeros((num_of_trials, num_of_generations))
+            evo_time[0, :] = evo_time_elapsed
+
+            for trial in range(2, num_of_trials+1):
+                identifier = dataset_name + '_subset_prop=' + f'{subset_prop:.4f}' + '_trial=' + str(trial)
+                with open(results_dir_path + dataset_name + '/' + 'GA_results_' + identifier + '.pkl', 'rb') as handle:
+                    best_solutions, best_solutions_fitness, evo_time_elapsed = pickle.load(handle)
+
+                evo_time[trial-1] = evo_time_elapsed
+
+            # Compute mean evolution time per genaration from cumulative evolution time
+            time_per_gen = evo_time[:, 1:] - evo_time[:, 0:num_of_generations-1]
+            mean_time_per_gen = np.mean(time_per_gen)
+            std_time_per_gen = np.std(time_per_gen)
+            mean_times_per_gen.append(mean_time_per_gen)
+
+        ax.bar(np.arange(len(subset_prop_list)) + plot_idx * width, mean_times_per_gen, width, yerr=std_time_per_gen, ecolor='black',
+       capsize=2, label=dataset_name)
+
+
+    ax.set_ylabel('Mean time \n per generation (s)')
+    ax.grid()
+
+    labels = [str(subset_prop * 100) for subset_prop in subset_prop_list]
+    ax.set_xticks(np.arange(len(subset_prop_list)) + width / 2)
+    ax.set_xticklabels(labels)
+    ax.set_xlabel('Subset proportion (\%)')
+    ax.legend()
+
+    plt.savefig(plots_dir_path + 'mean_time_per_gen.pdf', bbox_inches='tight')
 
 def acc_distribution_histograms_plot(dataset_names, subset_prop_list, results_dir_path, plots_dir_path):
-    fig, ax = plt.subplots(nrows=len(dataset_names), ncols=1, figsize=(10, 5))
+    # Create figure and set size
+    width_in, _ = set_size(width=506.295, subplots=(2, 1))
+    fig, ax = plt.subplots(nrows=len(dataset_names), ncols=1, figsize=(width_in, 4))
 
     for plot_idx, dataset_name in enumerate(dataset_names):
         # Set histogram bins
@@ -151,9 +224,9 @@ def acc_distribution_histograms_plot(dataset_names, subset_prop_list, results_di
             label = str(subset_prop * 100)
             ax[plot_idx].hist(acc_values, label=label, bins=bins, alpha=0.7)
 
-        ax[plot_idx].set_ylabel('Frequency', fontsize=14)
+        ax[plot_idx].set_ylabel('Frequency')
         ax[plot_idx].grid()
-    ax[plot_idx].set_xlabel('\(ACC\)', fontsize=14)
+    ax[plot_idx].set_xlabel('\(ACC\)')
     ax[0].legend(title='Subset proportion (\%)', ncols=5)
 
     # Add dataset name to the left of the y-axis
@@ -163,11 +236,14 @@ def acc_distribution_histograms_plot(dataset_names, subset_prop_list, results_di
                     size='large', ha='right', va='center', rotation=90)
 
     fig.suptitle('Distribution of \(ACC\) for random balanced subsets - \n 10000 trials per subset proportion')
-    plt.savefig(plots_dir_path + 'acc_distribution.png', dpi=300)
+    plt.tight_layout()
+    plt.savefig(plots_dir_path + 'acc_distribution.pdf', bbox_inches='tight')
 
 def violin_acc_plot(dataset_names, subset_prop_list, num_of_trials, results_dir_path, plots_dir_path):
     # Create figure and set size
-    fig, ax = plt.subplots(nrows=1, ncols=len(dataset_names), figsize=(16, 8))
+    width, _ = set_size(width=506.295, subplots=(1, len(dataset_names)))
+    height = 4
+    fig, ax = plt.subplots(nrows=1, ncols=len(dataset_names), figsize=(width, height))
 
     for plot_idx, dataset_name in enumerate(dataset_names):
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -181,7 +257,7 @@ def violin_acc_plot(dataset_names, subset_prop_list, num_of_trials, results_dir_
         acc_diff = 0.11
         x1, x2, y1, y2 = 5.5, 10.8, full_set_acc - acc_diff, full_set_acc  # subregion of the original image
         axins = ax[plot_idx].inset_axes(
-            [x1 / 11, 0.1, (x2 - x1) / 11, 0.46],
+            [x1 / 11, 0.05, (x2 - x1) / 11, 0.41],
             xlim=(x1, x2), ylim=(y1, y2), xticklabels=[])
         axins.set_ylim(bottom=full_set_acc - acc_diff, top=full_set_acc)
 
@@ -204,13 +280,16 @@ def violin_acc_plot(dataset_names, subset_prop_list, num_of_trials, results_dir_
             # Plot accuracy gains and loss dashed lines
             acc_gain = 100*(evo_acc_mean - random_acc_mean)
             acc_loss = 100*(evo_acc_mean - full_set_acc)
-            ax[plot_idx].annotate('+' +  "{:.1f}".format(acc_gain) + ' \%', (idx+1+0.25, random_acc_mean - 0.04), color='blue')
+            ax[plot_idx].annotate('+' +  "{:.1f}".format(acc_gain) + ' \%', (idx+1+0.25, random_acc_mean - 0.04), color='blue', fontsize=7)
 
             # Print acc loss value above full training set acc line for larger subset proportions
             if idx < 5:
-                ax[plot_idx].annotate("{:.1f}".format(acc_loss) + ' \%', (idx+1+0.45, evo_acc_mean + (full_set_acc - evo_acc_mean)/2), color='red')
+                ax[plot_idx].annotate("{:.1f}".format(acc_loss) + ' \%', (idx+1+0.45, evo_acc_mean + (idx*0.005) + (full_set_acc - evo_acc_mean)/2), color='red', fontsize=7)
             else:
-                ax[plot_idx].annotate("{:.1f}".format(acc_loss) + ' \%', (idx+1+0.4, full_set_acc + 0.01), color='red')
+                if idx % 2 == 0:
+                    ax[plot_idx].annotate("{:.1f}".format(acc_loss) + ' \%', (idx+1+0.4, full_set_acc + 0.024), color='red', fontsize=7)
+                else:
+                    ax[plot_idx].annotate("{:.1f}".format(acc_loss) + ' \%', (idx+1+0.4, full_set_acc + 0.01), color='red', fontsize=7)
 
         x_labels = [(str(subset_prop*100)) for subset_prop in subset_prop_list]
         violin_random = ax[plot_idx].violinplot(random_subset_accs, points=10000, showmeans=True)
@@ -264,12 +343,12 @@ def violin_acc_plot(dataset_names, subset_prop_list, num_of_trials, results_dir_
 
         # Plot full training set acc line
         ax[plot_idx].axhline(y=full_set_acc, color='k', linestyle='--', label='Full set accuracy')
-        ax[plot_idx].annotate('Full training set \(ACC\): ' + f'{full_set_acc:.2f}', (1, full_set_acc + 0.01), color='k')
+        ax[plot_idx].annotate('Full training set \(ACC\): ' + f'{full_set_acc:.2f}', (1, full_set_acc + 0.01), color='k', fontsize=8)
 
         ax[plot_idx].set_xticks(range(1, len(subset_prop_list) + 1))
         ax[plot_idx].set_xticklabels(x_labels)
         ax[plot_idx].set_title(dataset_name)
-        ax[plot_idx].set_xlabel('Subset proportions (\%)', fontsize=14)
+        ax[plot_idx].set_xlabel('Subset proportions (\%)')
         ax[plot_idx].set_ylim(bottom=0.25, top=1.0)
         ax[plot_idx].grid()
 
@@ -279,15 +358,18 @@ def violin_acc_plot(dataset_names, subset_prop_list, num_of_trials, results_dir_
     custom_handles = [mpatches.Patch(facecolor=color, label=label, hatch=hatch) for color, label, hatch in zip(legend_colors, legend_labels, legend_hatch)]
     ax[plot_idx].legend(handles=custom_handles, loc='lower right')
 
-    ax[0].set_ylabel('\(ACC\)', fontsize=14)
-    fig.suptitle('Distributions of \(ACC\) values for multiple subset proportions')
-    plt.savefig(plots_dir_path + 'acc_distribution_violin_plot.png', dpi=300)
+    ax[0].set_ylabel('\(ACC\)')
+    ax[1].set_yticklabels([])
+    # fig.suptitle('Distributions of \(ACC\) values for multiple subset proportions')
+    plt.tight_layout()
+    plt.savefig(plots_dir_path + 'acc_distribution_violin_plot.pdf', bbox_inches='tight')
 
 def incremental_learning_plot(dataset_names, memory_size_list, num_of_trials,  results_dir_path, plots_dir_path):
     seq_types = ['low', 'high']
 
     # Create figure and set size
-    fig, ax = plt.subplots(nrows=len(dataset_names), ncols=len(seq_types), figsize=(6, 6))
+    width, _ = set_size(241.147, subplots=(len(dataset_names), len(seq_types)))
+    fig, ax = plt.subplots(nrows=len(dataset_names), ncols=len(seq_types), figsize=(width, 3.5))
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
     for plot_idx, dataset_name in enumerate(dataset_names):
@@ -335,8 +417,8 @@ def incremental_learning_plot(dataset_names, memory_size_list, num_of_trials,  r
             ax[plot_idx, i].set_ylim([0.55, 1])
             ax[plot_idx, i].set_xticks(range(0, random_subsets_acc_mean.shape[0]), labels=range(2, random_subsets_acc_mean.shape[0]+2))
             ax[plot_idx, i].grid()
-            ax[len(dataset_names)-1 , i].set_xlabel('number of classes')
-            ax[0, i].set_title(seq_type[0].upper() + seq_type[1:] + ' accuracy sequence')
+            ax[len(dataset_names)-1 , i].set_xlabel('Number of classes')
+            ax[0, i].set_title(seq_type[0].upper() + seq_type[1:] + ' accuracy seq.')
 
         ax[plot_idx, 0].set_ylabel('\(ACC\)')
 
@@ -354,9 +436,10 @@ def incremental_learning_plot(dataset_names, memory_size_list, num_of_trials,  r
     handles = handles[::-1]
     labels = labels[::-1]
 
-    handles = custom_handles + handles
-    labels = ['Random', 'EvoDSS'] + labels
+    # handles = custom_handles + handles
+    # labels = ['Random', 'EvoDSS'] + labels
 
     plt.legend(labels=labels, handles=handles)
-    fig.suptitle('Class-incremental learning under memory constraints')
-    plt.savefig(plots_dir_path + 'incremental_learning_plot.png', dpi=300)
+    # fig.suptitle('Class-incremental learning under memory constraints')
+    plt.tight_layout()
+    plt.savefig(plots_dir_path + 'incremental_learning_plot.pdf', bbox_inches='tight')
