@@ -94,7 +94,7 @@ def best_fitness_vs_gen_plot(dataset_names, subset_prop_list, num_of_trials, res
     # fig.suptitle('Generation vs Best fitness')
     fig.subplots_adjust(bottom=0.2, left=0.15, right=0.78)
 
-    plt.savefig(plots_dir_path + 'gen_vs_best_fitness.pdf')
+    plt.savefig(plots_dir_path + 'gen_vs_best_fitness.pdf', bbox_inches='tight', pad_inches=0.0)
 
 def best_fitness_vs_time_plot(dataset_names, subset_prop_list, num_of_trials, results_dir_path, plots_dir_path):
     # Create figure and set size
@@ -159,7 +159,7 @@ def best_fitness_vs_time_plot(dataset_names, subset_prop_list, num_of_trials, re
     # fig.suptitle('Evolution time vs Best fitness')
     fig.subplots_adjust(bottom=0.2, left=0.15, right=0.78)
 
-    plt.savefig(plots_dir_path + 'time_vs_best_fitness.pdf')
+    plt.savefig(plots_dir_path + 'time_vs_best_fitness.pdf', bbox_inches='tight', pad_inches=0.0)
 
 def mean_time_per_gen(dataset_names, subset_prop_list, num_of_trials, results_dir_path, plots_dir_path):
     # Create figure and set size
@@ -207,7 +207,7 @@ def mean_time_per_gen(dataset_names, subset_prop_list, num_of_trials, results_di
     ax.set_xlabel('Subset proportion (\%)')
     ax.legend()
 
-    plt.savefig(plots_dir_path + 'mean_time_per_gen.pdf', bbox_inches='tight')
+    plt.savefig(plots_dir_path + 'mean_time_per_gen.pdf', bbox_inches='tight', pad_inches=0.0)
 
 def acc_distribution_histograms_plot(dataset_names, subset_prop_list, results_dir_path, plots_dir_path):
     # Create figure and set size
@@ -237,7 +237,7 @@ def acc_distribution_histograms_plot(dataset_names, subset_prop_list, results_di
 
     fig.suptitle('Distribution of \(ACC\) for random balanced subsets - \n 10000 trials per subset proportion')
     plt.tight_layout()
-    plt.savefig(plots_dir_path + 'acc_distribution.pdf', bbox_inches='tight')
+    plt.savefig(plots_dir_path + 'acc_distribution.pdf', bbox_inches='tight', pad_inches=0.0)
 
 def violin_acc_plot(dataset_names, subset_prop_list, num_of_trials, results_dir_path, plots_dir_path):
     # Create figure and set size
@@ -362,7 +362,7 @@ def violin_acc_plot(dataset_names, subset_prop_list, num_of_trials, results_dir_
     ax[1].set_yticklabels([])
     # fig.suptitle('Distributions of \(ACC\) values for multiple subset proportions')
     plt.tight_layout()
-    plt.savefig(plots_dir_path + 'acc_distribution_violin_plot.pdf', bbox_inches='tight')
+    plt.savefig(plots_dir_path + 'acc_distribution_violin_plot.pdf', bbox_inches='tight', pad_inches=0.0)
 
 def incremental_learning_plot(dataset_names, memory_size_list, num_of_trials,  results_dir_path, plots_dir_path):
     seq_types = ['low', 'high']
@@ -442,4 +442,4 @@ def incremental_learning_plot(dataset_names, memory_size_list, num_of_trials,  r
     plt.legend(labels=labels, handles=handles)
     # fig.suptitle('Class-incremental learning under memory constraints')
     plt.tight_layout()
-    plt.savefig(plots_dir_path + 'incremental_learning_plot.pdf', bbox_inches='tight')
+    plt.savefig(plots_dir_path + 'incremental_learning_plot.pdf', bbox_inches='tight', pad_inches=0.0)
