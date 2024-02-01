@@ -29,7 +29,7 @@ After running the scripts, the folder structure changes to:
 Clone the repository and setup the conda environment to run EvoDSS code:
 ```
 cd <path_to_evodss>
-conda env create -f env.yml
+conda env create -f conda_env.yml
 conda activate evodss
 ```
 
