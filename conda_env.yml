@@ -8,4 +8,3 @@ dependencies:
   - matplotlib
   - tqdm
   - pygad
-prefix: /Users/pacfan/miniforge3/envs/evodss
