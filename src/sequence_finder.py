@@ -34,7 +34,7 @@ def find_next_class(Q, available_classes, M, test_example_idxs, acc_list, high=T
             new_test_example_idxs = torch.nonzero((test_set.targets == class_num))
             new_test_example_idxs = torch.squeeze(new_test_example_idxs).numpy().tolist()
 
-            acc = ACC(classifier, X_test[test_example_idxs + new_test_example_idxs], y_test[test_example_idxs + new_test_example_idxs],
+            acc = ACC(classifier, X_test, y_test,
                       subset_idxs=M + new_class_idxs, test_subset_idxs=test_example_idxs + new_test_example_idxs)
 
             # print('Q =', Q, ', new class', class_num, ' acc = ' + f'{acc:.5f}')
@@ -77,7 +77,7 @@ def find_first_pair(available_classes):
 
             M, test_example_idxs = get_train_and_test_examples_of_class_pair(Q)
 
-            acc = ACC(classifier, X_test[test_example_idxs], y_test[test_example_idxs], subset_idxs=M,
+            acc = ACC(classifier, X_test, y_test, subset_idxs=M,
                       test_subset_idxs=test_example_idxs)
 
             print('Q =', Q, ' acc = ' + f'{acc:.5f}')
